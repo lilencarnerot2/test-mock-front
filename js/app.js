@@ -1,68 +1,110 @@
-    const API_URL =
-"http://localhost:6524";
+const API_URL = "http://localhost:8092/alojamientos";
 
-const boton =
-document.getElementById("btnLogin");
-console.log(boton);
+let map;
+let globalData = [];
 
-boton.addEventListener(
-    "click",
-function login(){
-    alert("Boton funcionando");
+// LOGIN
+document.getElementById("btnLogin").addEventListener("click", () => {
+  const user = document.getElementById("usuario").value;
+  const pass = document.getElementById("password").value;
+
+  fetch(API_URL, {
+    headers: {
+      "Authorization": "Basic " + btoa(user + ":" + pass)
+    }
+  })
+    .then(res => res.json())
+    .then(data => {
+      globalData = data.data;
+
+      render(globalData);
+      renderMap(globalData);
+    })
+    .catch(err => console.log(err));
 });
 
-async function login(){
+// OJITO PASSWORD
+document.getElementById("togglePass").addEventListener("click", () => {
+  const pass = document.getElementById("password");
+  pass.type = pass.type === "password" ? "text" : "password";
+});
 
-    const usuario =
-    document
-    .getElementById("usuario")
-    .value;
+// RESET
+document.getElementById("btnReset").addEventListener("click", () => {
+  document.getElementById("app").innerHTML = "";
+  if (map) {
+    map.remove();
+    map = null;
+  }
+  globalData = [];
+});
 
-    const password =
-    document
-    .getElementById("password")
-    .value;
+// SEARCH
+document.getElementById("search").addEventListener("input", (e) => {
+  const value = e.target.value.toLowerCase();
 
-    console.log(
-        "Usuario:",
-        usuario
-    );
+  const filtered = globalData.filter(item =>
+    item.nombre.toLowerCase().includes(value)
+  );
 
-    console.log(
-        "Password:",
-        password
-    );
+  render(filtered);
+  renderMap(filtered);
+});
 
-    const auth =
-    btoa(
-        `${usuario}:${password}`
-    );
+// FILTER
+document.getElementById("filter").addEventListener("change", (e) => {
+  const value = e.target.value;
 
-    console.log(
-        "Basic Auth:",
-        auth
-    );
+  if (value === "all") {
+    render(globalData);
+    renderMap(globalData);
+    return;
+  }
 
-    // backend futuro
+  const filtered = globalData.filter(i => i.tipo === value);
 
-    /*
-    const respuesta =
-    await fetch(
-        `${API_URL}/login`,
-        {
+  render(filtered);
+  renderMap(filtered);
+});
 
-            method:"POST",
+// RENDER CARDS
+function render(data) {
+  document.getElementById("app").innerHTML = `
+    <h2>Total: ${data.length}</h2>
 
-            headers:{
+    <div class="cards">
+      ${data.map(i => `
+        <div class="card">
+          <h3>${i.nombre}</h3>
+          <p>${i.domicilio}</p>
+          <small>${i.tipo}</small>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
 
-                Authorization:
-                `Basic ${auth}`
+// MAPA
+function renderMap(data) {
+  if (!map) {
+    map = L.map('map').setView([-34.66, -58.72], 12);
 
-            }
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: 'OpenStreetMap'
+    }).addTo(map);
+  }
 
-        }
-    );
-    */
+  map.eachLayer(layer => {
+    if (layer instanceof L.Marker) {
+      map.removeLayer(layer);
+    }
+  });
 
-}                                                                                                                                                              
- 
+  data.forEach(item => {
+    if (item.lat && item.long) {
+      L.marker([item.lat, item.long])
+        .addTo(map)
+        .bindPopup(item.nombre);
+    }
+  });
+}

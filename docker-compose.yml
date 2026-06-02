@@ -1,7 +1,7 @@
 services:
   mock_service:
     build:
-      context: .
+      context: ./mock-service
     container_name: go_mock_service
     ports:
       - "8092:${MOCK_PORT}"
