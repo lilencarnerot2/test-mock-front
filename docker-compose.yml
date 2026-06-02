@@ -1,0 +1,36 @@
+services:
+  mock_service:
+    build:
+      context: .
+    container_name: go_mock_service
+    ports:
+      - "8092:${MOCK_PORT}"
+    env_file:
+      - .env
+
+  normalizador:
+    build:
+      context: ./normalizador
+    container_name: go_normalizador
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    env_file:
+      - .env
+    stdin_open: true
+    tty: true
+  
+
+  api_fiber:
+    build:
+      context: ./api-fiber
+    container_name: go_api_fiber
+    ports:
+      - "${FIBER_PORT}:8091"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    env_file:
+      - .env
+    depends_on:
+      - normalizador
